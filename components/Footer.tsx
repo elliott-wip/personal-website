@@ -1,3 +1,7 @@
+'use client';
+
+import { GithubLogo, TwitterLogo, Envelope } from '@phosphor-icons/react';
+
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
@@ -13,22 +17,28 @@ export default function Footer() {
               href="https://github.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-sm"
+              className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-sm flex items-center gap-1.5"
+              aria-label="GitHub"
             >
+              <GithubLogo size={18} weight="fill" />
               GitHub
             </a>
             <a
               href="https://twitter.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-sm"
+              className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-sm flex items-center gap-1.5"
+              aria-label="Twitter"
             >
+              <TwitterLogo size={18} weight="fill" />
               Twitter
             </a>
             <a
               href="mailto:your.email@example.com"
-              className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-sm"
+              className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-sm flex items-center gap-1.5"
+              aria-label="Contact"
             >
+              <Envelope size={18} />
               Contact
             </a>
           </div>

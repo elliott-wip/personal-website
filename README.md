@@ -96,6 +96,38 @@ Your content here...
 - **About Page**: Edit `app/about/page.tsx`
 - **Home Page**: Edit `app/page.tsx`
 
+### Icons
+
+This project uses [Phosphor Icons](https://github.com/phosphor-icons/homepage) as the default icon library.
+
+**Basic usage:**
+```tsx
+import { House, Article, User } from '@phosphor-icons/react';
+
+<House size={24} weight="fill" />
+```
+
+**Important:** Icons must be used in Client Components. Add `'use client'` at the top of any component that uses icons:
+```tsx
+'use client';
+
+import { House } from '@phosphor-icons/react';
+
+export default function MyComponent() {
+  return <House size={24} />;
+}
+```
+
+**Icon weights:** `'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone'`
+
+**Icon sizes:** Use the `IconSize` constant from `lib/icons.ts` for consistency:
+```tsx
+import { IconSize } from '@/lib/icons';
+<House size={IconSize.lg} />
+```
+
+Browse all available icons: https://phosphoricons.com
+
 ### Styling
 
 The site uses Tailwind CSS. You can customize:
@@ -133,6 +165,23 @@ npm start
 - `npm run build` - Build for production
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
+
+### Quick Push to GitHub
+
+To quickly add, commit, and push your changes:
+
+**Option 1: Use the push script**
+```bash
+./push.sh "Your commit message"
+```
+
+**Option 2: Manual commands**
+```bash
+cd /Users/echang/Github/personal-website
+git add .
+git commit -m "Your commit message"
+git push
+```
 
 ## License
 
