@@ -1,5 +1,5 @@
-import CoffeeAnimation from '@/components/CoffeeAnimation';
+import FerrisAnimation from '@/components/FerrisAnimation';
 
-export default function Home() {
-  return <CoffeeAnimation />;
+export default function LandingPage() {
+  return <FerrisAnimation />;
 }
