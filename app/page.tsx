@@ -1,5 +1,5 @@
-import HabitTracker from '@/components/HabitTracker';
+import CoffeeAnimation from '@/components/CoffeeAnimation';
 
 export default function Home() {
-  return <HabitTracker />;
+  return <CoffeeAnimation />;
 }

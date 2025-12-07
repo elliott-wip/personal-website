@@ -1,24 +1,57 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { format, getDaysInMonth, startOfMonth, eachDayOfInterval, isSameDay, isToday } from 'date-fns';
+import { format, getDaysInMonth, startOfMonth, eachDayOfInterval, isToday } from 'date-fns';
+import HabitModal from './HabitModal';
+import HabitSettings from './HabitSettings';
 
-const TOTAL_HABITS = 5;
-
-interface DayData {
-  date: Date;
-  completed: number; // 0-5
-}
+const DEFAULT_HABITS = [
+  'Exercise',
+  'Read for 30 minutes',
+  'Meditate',
+  'Write in journal',
+  'No social media after 9pm',
+];
 
 export default function HabitTracker() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [habits, setHabits] = useState<Record<string, number>>({});
+  // Store boolean arrays for each day: { "2024-12-07": [true, false, true, false, false] }
+  const [habits, setHabits] = useState<Record<string, boolean[]>>({});
+  const [globalHabits, setGlobalHabits] = useState<string[]>(DEFAULT_HABITS);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-  // Load habits from localStorage on mount
+  // Load habits and global habits from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem('habit-tracker');
-    if (saved) {
-      setHabits(JSON.parse(saved));
+    const savedHabits = localStorage.getItem('habit-tracker');
+    if (savedHabits) {
+      try {
+        const parsed = JSON.parse(savedHabits);
+        // Migrate old format (numbers) to new format (boolean arrays)
+        const migrated: Record<string, boolean[]> = {};
+        for (const [dateKey, value] of Object.entries(parsed)) {
+          if (typeof value === 'number') {
+            // Old format: convert count to boolean array
+            const count = value as number;
+            const checked = Array(globalHabits.length).fill(false);
+            for (let i = 0; i < count && i < globalHabits.length; i++) {
+              checked[i] = true;
+            }
+            migrated[dateKey] = checked;
+          } else {
+            // New format: already boolean array
+            migrated[dateKey] = value as boolean[];
+          }
+        }
+        setHabits(migrated);
+      } catch (e) {
+        // If parsing fails, start fresh
+        setHabits({});
+      }
+    }
+
+    const savedGlobalHabits = localStorage.getItem('global-habits');
+    if (savedGlobalHabits) {
+      setGlobalHabits(JSON.parse(savedGlobalHabits));
     }
   }, []);
 
@@ -27,6 +60,27 @@ export default function HabitTracker() {
     localStorage.setItem('habit-tracker', JSON.stringify(habits));
   }, [habits]);
 
+  // Save global habits to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('global-habits', JSON.stringify(globalHabits));
+  }, [globalHabits]);
+
+  // Migrate habits when globalHabits length changes
+  useEffect(() => {
+    setHabits((prev) => {
+      const updated: Record<string, boolean[]> = {};
+      for (const [dateKey, checkedArray] of Object.entries(prev)) {
+        // Resize array to match current globalHabits length
+        const newArray = Array(globalHabits.length).fill(false);
+        for (let i = 0; i < Math.min(checkedArray.length, globalHabits.length); i++) {
+          newArray[i] = checkedArray[i] || false;
+        }
+        updated[dateKey] = newArray;
+      }
+      return updated;
+    });
+  }, [globalHabits.length]);
+
   const daysInMonth = getDaysInMonth(currentMonth);
   const monthStart = startOfMonth(currentMonth);
   const days = eachDayOfInterval({
@@ -34,8 +88,14 @@ export default function HabitTracker() {
     end: new Date(currentMonth.getFullYear(), currentMonth.getMonth(), daysInMonth),
   });
 
-  const getIntensity = (completed: number): string => {
-    const percentage = completed / TOTAL_HABITS;
+  const getCompletedCount = (checkedArray: boolean[] | undefined): number => {
+    if (!checkedArray) return 0;
+    return checkedArray.filter(Boolean).length;
+  };
+
+  const getIntensity = (completed: number, total: number): string => {
+    if (total === 0) return 'bg-gray-100 dark:bg-gray-800';
+    const percentage = completed / total;
     if (percentage === 0) return 'bg-gray-100 dark:bg-gray-800';
     if (percentage <= 0.2) return 'bg-green-200 dark:bg-green-900';
     if (percentage <= 0.4) return 'bg-green-300 dark:bg-green-700';
@@ -45,19 +105,20 @@ export default function HabitTracker() {
   };
 
   const handleBoxClick = (date: Date) => {
+    setSelectedDate(date);
+  };
+
+  const handleModalUpdate = (date: Date, checkedArray: boolean[]) => {
     const dateKey = format(date, 'yyyy-MM-dd');
-    const current = habits[dateKey] || 0;
-    const next = (current + 1) % (TOTAL_HABITS + 1);
-    
     setHabits((prev) => ({
       ...prev,
-      [dateKey]: next,
+      [dateKey]: checkedArray,
     }));
   };
 
   const getTooltipText = (date: Date, completed: number) => {
     const dateStr = format(date, 'MMM d, yyyy');
-    return `${completed}/${TOTAL_HABITS} habits completed on ${dateStr}`;
+    return `${completed}/${globalHabits.length} habits completed on ${dateStr}`;
   };
 
   return (
@@ -68,7 +129,7 @@ export default function HabitTracker() {
             {format(currentMonth, 'MMMM yyyy')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-sm">
-            Click a box to cycle through habit completions (0-{TOTAL_HABITS})
+            Click a box to track your daily habits
           </p>
         </div>
 
@@ -92,8 +153,9 @@ export default function HabitTracker() {
             {/* Calendar days */}
             {days.map((day) => {
               const dateKey = format(day, 'yyyy-MM-dd');
-              const completed = habits[dateKey] || 0;
-              const intensity = getIntensity(completed);
+              const checkedArray = habits[dateKey] || Array(globalHabits.length).fill(false);
+              const completed = getCompletedCount(checkedArray);
+              const intensity = getIntensity(completed, globalHabits.length);
               const isCurrentDay = isToday(day);
 
               return (
@@ -141,13 +203,27 @@ export default function HabitTracker() {
         <div className="text-center mt-8">
           <p className="text-sm text-gray-600 dark:text-gray-400">
             <span className="font-semibold text-gray-900 dark:text-white">
-              {Object.values(habits).reduce((sum, count) => sum + count, 0)}
+              {Object.values(habits).reduce((sum, checkedArray) => sum + getCompletedCount(checkedArray), 0)}
             </span>{' '}
             habits completed this month
           </p>
         </div>
       </div>
+
+      {/* Habit Modal */}
+      {selectedDate && (
+        <HabitModal
+          date={selectedDate}
+          checkedHabits={habits[format(selectedDate, 'yyyy-MM-dd')] || Array(globalHabits.length).fill(false)}
+          totalHabits={globalHabits.length}
+          habits={globalHabits}
+          onClose={() => setSelectedDate(null)}
+          onUpdate={handleModalUpdate}
+        />
+      )}
+
+      {/* Settings Button */}
+      <HabitSettings habits={globalHabits} onUpdate={setGlobalHabits} />
     </div>
   );
 }
-
